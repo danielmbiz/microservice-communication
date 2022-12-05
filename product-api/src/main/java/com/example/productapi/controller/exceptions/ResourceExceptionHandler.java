@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.example.productapi.service.exceptions.AuthenticationException;
 import com.example.productapi.service.exceptions.DatabaseException;
 import com.example.productapi.service.exceptions.ResourceNotFoundException;
 import com.example.productapi.service.exceptions.ValidationException;
@@ -42,4 +43,21 @@ public class ResourceExceptionHandler {
 				request.getRequestURI());
 		return ResponseEntity.status(status).body(err);
 	}
+	
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity<StandardError> authenticationException(AuthenticationException e, HttpServletRequest request) {
+		String error = "Acesso não autorizado";
+		HttpStatus status = HttpStatus.UNAUTHORIZED;
+		StandardError err = new StandardError(Instant.now(), status.value(), error, e.getMessage(),
+				request.getRequestURI());
+		return ResponseEntity.status(status).body(err);
+	}
+	
+	/*@ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<StandardError> handleAuthenticationException(AuthenticationException authenticationException) {
+        var details = new StandardError();
+        details.setStatus(HttpStatus.UNAUTHORIZED.value());
+        details.setMessage(authenticationException.getMessage());
+        return new ResponseEntity<>(details, HttpStatus.UNAUTHORIZED);
+    }*/
 }
