@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.productapi.dto.ProductRequest;
 import com.example.productapi.dto.ProductResponse;
+import com.example.productapi.dto.ProductStockDTO;
 import com.example.productapi.model.Category;
 import com.example.productapi.model.Product;
 import com.example.productapi.model.Supplier;
@@ -85,7 +86,7 @@ public class ProductService {
 
 	public ProductResponse update(Integer id, ProductRequest obj) {
 		try {
-			findById(id); 
+			findById(id);
 			System.out.println(obj.getCategoryId());
 			var category = new Category(categoryService.findById(obj.getCategoryId()));
 			var supplier = new Supplier(supplierService.findById(obj.getSupplierId()));
@@ -94,6 +95,10 @@ public class ProductService {
 		} catch (RuntimeException e) {
 			throw new ResourceNotFoundException(e.getMessage());
 		}
+	}
+
+	public void updateProductStock(ProductStockDTO product) {
+
 	}
 
 	public void delete(Integer id) {
