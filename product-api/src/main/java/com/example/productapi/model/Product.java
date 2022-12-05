@@ -12,8 +12,6 @@ import javax.persistence.ManyToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.Table;
 
-import org.springframework.beans.BeanUtils;
-
 import com.example.productapi.dto.ProductRequest;
 import com.example.productapi.dto.ProductResponse;
 
@@ -117,10 +115,6 @@ public class Product {
 		this.quantityAvailable = quantityAvailable;
 	}
 	
-	public static Product of(ProductRequest request, Category category) {
-		var product = new Product();
-		BeanUtils.copyProperties(request, product);
-		return product;		
-	}
+	
 	
 }

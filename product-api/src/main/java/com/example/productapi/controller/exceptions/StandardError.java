@@ -1,4 +1,4 @@
-package com.example.productapi.config.exception;
+package com.example.productapi.controller.exceptions;
 
 import java.io.Serializable;
 import java.time.Instant;

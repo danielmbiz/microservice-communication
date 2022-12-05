@@ -11,7 +11,13 @@ public class SupplierResponse {
 
 	public SupplierResponse() {
 
-	}	
+	}
+
+	public SupplierResponse(Supplier supplier) {
+		super();
+		this.id = supplier.getId();
+		this.name = supplier.getName();
+	}
 
 	public Integer getId() {
 		return id;

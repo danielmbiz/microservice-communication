@@ -10,6 +10,7 @@ import javax.persistence.Table;
 import org.springframework.beans.BeanUtils;
 
 import com.example.productapi.dto.SupplierRequest;
+import com.example.productapi.dto.SupplierResponse;
 
 @Entity
 @Table(name = "supplier")
@@ -30,6 +31,12 @@ public class Supplier {
 		super();
 		this.id = id;
 		this.name = name;
+	}
+	
+	public Supplier(SupplierResponse response) {
+		super();
+		this.id = response.getId();
+		this.name = response.getName();
 	}
 
 	public Integer getId() {
