@@ -3,7 +3,9 @@ package com.example.productapi;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
+@EnableFeignClients
 @EnableRabbit
 @SpringBootApplication
 public class ProductApiApplication {

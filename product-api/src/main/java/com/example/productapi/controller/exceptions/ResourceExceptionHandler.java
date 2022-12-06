@@ -36,7 +36,7 @@ public class ResourceExceptionHandler {
 	}
 
 	@ExceptionHandler(ValidationException.class)
-	public ResponseEntity<StandardError> validationException(DatabaseException e, HttpServletRequest request) {
+	public ResponseEntity<StandardError> validationException(ValidationException e, HttpServletRequest request) {
 		String error = "Não encontrado";
 		HttpStatus status = HttpStatus.BAD_REQUEST;
 		StandardError err = new StandardError(Instant.now(), status.value(), error, e.getMessage(),

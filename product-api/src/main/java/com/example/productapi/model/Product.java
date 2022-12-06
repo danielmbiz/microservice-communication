@@ -115,6 +115,8 @@ public class Product {
 		this.quantityAvailable = quantityAvailable;
 	}
 	
-	
+	public void updateStock(Integer quantity) {
+		quantityAvailable = quantityAvailable - quantity;
+	}
 	
 }

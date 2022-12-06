@@ -2,25 +2,38 @@ package com.example.productapi.service;
 
 import static org.springframework.util.ObjectUtils.isEmpty;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 
+import com.example.productapi.client.SalesClient;
+import com.example.productapi.dto.ProductCheckStockRequest;
+import com.example.productapi.dto.ProductQuantityDTO;
 import com.example.productapi.dto.ProductRequest;
 import com.example.productapi.dto.ProductResponse;
+import com.example.productapi.dto.ProductSalesResponse;
 import com.example.productapi.dto.ProductStockDTO;
+import com.example.productapi.dto.SalesConfirmationDTO;
+import com.example.productapi.dto.enums.SalesStatus;
 import com.example.productapi.model.Category;
 import com.example.productapi.model.Product;
 import com.example.productapi.model.Supplier;
+import com.example.productapi.rabbitmq.SalesConfirmationSender;
 import com.example.productapi.repository.ProductRepository;
 import com.example.productapi.service.exceptions.DatabaseException;
 import com.example.productapi.service.exceptions.ResourceNotFoundException;
 import com.example.productapi.service.exceptions.ValidationException;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class ProductService {
 
@@ -32,6 +45,12 @@ public class ProductService {
 
 	@Autowired
 	private CategoryService categoryService;
+
+	@Autowired
+	private SalesConfirmationSender salesConfirmationSender;
+
+	@Autowired
+	private SalesClient salesClient;
 
 	public ProductResponse findById(Integer id) {
 		if (isEmpty(id)) {
@@ -97,8 +116,50 @@ public class ProductService {
 		}
 	}
 
+	@Transactional
 	public void updateProductStock(ProductStockDTO product) {
+		try {
+			var productsForUpdate = new ArrayList<Product>();
+			validateStockUpdateData(product);
+			product.getProducts().forEach(sales -> {
+				var productResponse = findById(sales.getProductId());
+				var existingProduct = new Product(productResponse);
+				validateQuantityInStock(sales, existingProduct);
+				existingProduct.updateStock(sales.getQuantity());
+				productsForUpdate.add(existingProduct);
+			});
+			if (!productsForUpdate.isEmpty()) {
+				repository.saveAll(productsForUpdate);
+				var aprovedMessage = new SalesConfirmationDTO(product.getSalesId(), SalesStatus.APROVADO);
+				salesConfirmationSender.sendSalesConfirmationMessages(aprovedMessage);
+			}
 
+		} catch (Exception e) {
+			log.error("Erro no processamento da venda ", e.getMessage(), e);
+			salesConfirmationSender.sendSalesConfirmationMessages(
+					new SalesConfirmationDTO(product.getSalesId(), SalesStatus.REJEITADO));
+		}
+	}
+
+	private void validateStockUpdateData(ProductStockDTO productStockDTO) {
+		if (isEmpty(productStockDTO) || (isEmpty(productStockDTO.getSalesId()))) {
+			throw new ValidationException("Venda não informada");
+		}
+		if (isEmpty(productStockDTO.getProducts())) {
+			throw new ValidationException("Produto não informado");
+		}
+		productStockDTO.getProducts().forEach(salesProduct -> {
+			if (isEmpty(salesProduct.getQuantity()) || isEmpty(salesProduct.getProductId())) {
+				throw new ValidationException("Quantidade e produto devem ser informados");
+			}
+		});
+	}
+
+	private void validateQuantityInStock(ProductQuantityDTO productQuantityDTO, Product product) {
+		if (productQuantityDTO.getQuantity() > product.getQuantityAvailable()) {
+			throw new ValidationException(
+					"Quantidade do produto não disponível em estoque Id: " + productQuantityDTO.getProductId());
+		}
 	}
 
 	public void delete(Integer id) {
@@ -135,4 +196,31 @@ public class ProductService {
 		}
 	}
 
+	public ProductSalesResponse findProductSales(Integer id) {
+		var product = findById(id);
+		try {
+			var sales = salesClient.findSalesByProduct(product.getId());
+			return new ProductSalesResponse(product, sales.getSalesId());
+		} catch (Exception e) {
+			throw new ValidationException("Erro ao recuperar as vendas do produto");
+		}
+	}
+
+	public void checkProductsStock(ProductCheckStockRequest request) {
+		if (isEmpty(request) || isEmpty(request.getProducts())) {
+			throw new ValidationException("Requisição e produtos devem ser informados");
+		}
+		request.getProducts().forEach(this::validateStock);
+	}
+
+	private void validateStock(ProductQuantityDTO productQuantityDTO) {
+		if (isEmpty(productQuantityDTO.getQuantity()) || isEmpty(productQuantityDTO.getProductId())) {
+			throw new ValidationException("Produto e quantidade precisam ser informados");
+		}
+		var productResponse = findById(productQuantityDTO.getProductId());
+		var product = new Product(productResponse);
+		if (product.getQuantityAvailable() < productQuantityDTO.getQuantity()) {
+			throw new ValidationException("Quantidade não disponível no estoque Id do produto: " + product.getId());
+		}
+	}
 }

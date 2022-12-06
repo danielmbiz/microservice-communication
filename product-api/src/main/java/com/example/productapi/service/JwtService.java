@@ -28,7 +28,6 @@ public class JwtService {
 					.parseClaimsJws(acessToken)
 					.getBody();
 			var user = JwtResponse.getUser(claims);
-			System.out.println(user.getEmail());
 			if (isEmpty(user) || isEmpty(user.getId())) {
 				throw new AuthenticationException("Usuário inválido!");
 			}
