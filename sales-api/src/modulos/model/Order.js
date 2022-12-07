@@ -20,7 +20,7 @@ const OrderSchema = new Schema({
         type: Date,
         required: true
     },
-    updateAt: {
+    updatedAt: {
         type: Date,
         required: true
     }
