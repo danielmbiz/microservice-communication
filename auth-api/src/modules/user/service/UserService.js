@@ -14,7 +14,7 @@ class UserService {
             const { authUser } = req;
             this.validateRequestEmail(email);
             let user = await userRepository.findByEmail(email);
-            this.validateUserNotFound(user);           
+            this.validateUserNotFound(user);
             this.validateAthenticadUser(user, authUser);
             return {
                 status: httpStatus.SUCCESS,
@@ -46,7 +46,7 @@ class UserService {
             throw new UserException(
                 httpStatus.BAD.REQUEST,
                 'Usuário não encontrado'
-            ); 
+            );
         }
     }
 
@@ -57,25 +57,35 @@ class UserService {
     }
 
     async getAcessToken(req) {
+        console.info("cheguei");
         try {
-            const {email, password} = req.body;
-            this.validateAcessToken(email, password);   
+            const { transactionid, serviceid } = req.headers;
+            console.info(
+                `Requisição de POST do PEDIDO: ${JSON.stringify(req.body)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
+            const { email, password } = req.body;
+            this.validateAcessToken(email, password);
             let user = await userRepository.findByEmail(email);
-            this.validateUserNotFound(user);            
+            this.validateUserNotFound(user);
             await this.validatePassword(password, user.password);
-            const authUser = {id: user.id, name: user.name, email: user.email};
-            const acessToken = jwt.sign({authUser}, secrets.API_SECRET, {expiresIn: "1d"});
-            return {
+            const authUser = { id: user.id, name: user.name, email: user.email };
+            const acessToken = jwt.sign({ authUser }, secrets.API_SECRET, { expiresIn: "1d" });
+            let response = {
                 status: httpStatus.SUCCESS,
                 acessToken
             }
+            console.info(
+                `Resposta do POST do LOGIN: ${JSON.stringify(response)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
+            return response;
+
         } catch (error) {
             return {
                 status: error.status ? error.status : httpStatus.INTERNAL_SERVER_ERROR,
                 message: error.message
             };
         }
-        
+
 
     }
 

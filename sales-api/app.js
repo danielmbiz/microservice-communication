@@ -7,6 +7,7 @@ import { sendProductStockUpdateQueue } from "./src/modulos/rabbitmq/productStock
 
 import checkToken from "./src/config/auth/checkToken.js";
 import orderRouter from "./src/modulos/routes/OrderRoute.js";
+import tracing from "./src/config/tracing.js";
 
 const app = express();
 const env = process.env;
@@ -17,6 +18,7 @@ createInitialData();
 connectRabbitMq();
 
 app.use(express.json());
+app.use(tracing);
 app.use(checkToken);
 app.use(orderRouter);
 

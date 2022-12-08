@@ -9,15 +9,23 @@ class OrderService {
     async findById(req) {
         try {
             const { id } = req.params;
+            const { transactionid, serviceid } = req.headers;
+            console.info(
+                `Requisição GET de PEDIDO: ${id} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
             this.validateIdInformed(id);
             let order = await OrderRepository.findById(id);
             if (!order) {
                 throw new Exception(BAD_REQUEST, "Pedido não encontrado");
             }
-            return {
+            let response = {
                 status: SUCCESS,
                 order
             }
+            console.info(
+                `Resposta GET do PEDIDO: ${JSON.stringify(response)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
+            return response;
         } catch (error) {
             return {
                 status: error.status ? error.status : INTERNAL_SERVER_ERROR,
@@ -29,17 +37,25 @@ class OrderService {
     async findByProductId(req) {
         try {
             const { productId } = req.params;
+            const { transactionid, serviceid } = req.headers;
+            console.info(
+                `Requisição GET de PRODUTOS DE PEDIDO: ${productId} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
             this.validateIdInformed(productId);
             let orders = await OrderRepository.findByProductId(productId);
             if (!orders) {
                 throw new Exception(BAD_REQUEST, "Pedidos não encontrados");
             }
-            return {
+            let response = {
                 status: SUCCESS,
                 salesId : orders.map((order) => {
                     return order.id;
                 })
             }
+            console.info(
+                `Resposta do GET de PRODUTOS DE PEDIDO: ${JSON.stringify(response)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
+            return response;
         } catch (error) {
             return {
                 status: error.status ? error.status : INTERNAL_SERVER_ERROR,
@@ -50,14 +66,23 @@ class OrderService {
 
     async findAll(req) {
         try {
+            const { transactionid, serviceid } = req.headers;
+            console.info(
+                `Requisição GET de TODOS PEDIDOS: | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
+
             let orders = await OrderRepository.findAll();
             if (!orders) {
                 throw new Exception(BAD_REQUEST, "Pedidos não encontrados");
             }
-            return {
+            let response = {
                 status: SUCCESS,
                 orders
             }
+            console.info(
+                `Resposta do POST do LOGIN: ${JSON.stringify(response)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
+            return response;
         } catch (error) {
             return {
                 status: error.status ? error.status : INTERNAL_SERVER_ERROR,
@@ -75,17 +100,27 @@ class OrderService {
     async createOrder(req) {
         try {
             let orderData = req.body;
+            const { transactionid, serviceid } = req.headers;
+            console.info(
+                `Requisição POST de novo PEDIDO: ${JSON.stringify(orderData)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
             this.validateOrderData(orderData);
             const { authUser } = req;
             const { authorization } = req.headers;
             let order = this.createInitialOrderData(orderData, authUser)
-            await this.validateProductStock(order, authorization);
+            await this.validateProductStock(order, authorization, transactionid);
             let createdOrder = await OrderRepository.save(order);
-            this.sendMessage(createdOrder);
-            return {
+            
+            this.sendMessage(createdOrder, transactionid);
+            let response = {
                 status: SUCCESS,
                 createdOrder
             }
+            console.info(
+                `Resposta do POST do PEDIDO: ${JSON.stringify(response)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]`
+            );
+
+            return response;
         } catch (error) {
             console.error(`Erro Service 1: ${error}`);
             return {
@@ -132,17 +167,18 @@ class OrderService {
         }
     }
 
-    async validateProductStock(order, token) {
-        let stockIsOk  = await ProductClient.checkProductStock(order, token);
+    async validateProductStock(order, token, transactionid) {
+        let stockIsOk  = await ProductClient.checkProductStock(order, token, transactionid);
         if (stockIsOk) {
             throw new Exception(BAD_REQUEST, "Não existe estoque para o produto")
         }
     }
 
-    sendMessage(createdOrder) {
+    sendMessage(createdOrder, transactionid) {
         const message = {
             salesId: createdOrder.id,
-            products: createdOrder.products
+            products: createdOrder.products,
+            transactionid
         }
         sendProductStockUpdateQueue(message);
     }

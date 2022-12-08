@@ -1,35 +1,25 @@
 package com.example.productapi.config.interceptor;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
-import com.example.productapi.service.exceptions.ValidationException;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
+import static com.example.productapi.config.RequestUtil.getCurrentRequest;; 
 
 @Component
 public class FeignClienteAuthInterceptor implements RequestInterceptor {
 
 	private static final String AUTHORIZATION = "Authorization";
+	private static String TRANSACTIONID = "transactionid";
 
 	@Override
 	public void apply(RequestTemplate template) {
 		var currentRequest = getCurrentRequest();
-		template.header(AUTHORIZATION, currentRequest.getHeader(AUTHORIZATION));
+		template.header(AUTHORIZATION, currentRequest.getHeader(AUTHORIZATION))
+		        .header(TRANSACTIONID, currentRequest.getHeader(TRANSACTIONID));
 
 	}
 
-	private HttpServletRequest getCurrentRequest() {
-		try {
-			return ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new ValidationException("A requisição não pode ser processada");
-		}
-	}
+	
 
 }

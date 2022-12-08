@@ -19,6 +19,9 @@ import com.example.productapi.dto.ProductResponse;
 import com.example.productapi.dto.ProductSalesResponse;
 import com.example.productapi.service.ProductService;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestController
 @RequestMapping("/api/product")
 public class ProductController {
@@ -66,9 +69,10 @@ public class ProductController {
 		List<ProductResponse> obj = productService.findBySupplierId(supplierId);
 		return ResponseEntity.ok().body(obj);
 	}
-	
+
 	@PostMapping("/check-stock")
 	public ResponseEntity<Void> checkProductsStock(@RequestBody ProductCheckStockRequest request) {
+		log.info("Requisição POST de novo PEDIDO: ${JSON.stringify(orderData)} | [transationId: ${transactionid}] | [serviceId: ${serviceid}]");
 		productService.checkProductsStock(request);
 		return ResponseEntity.ok().build();
 	}

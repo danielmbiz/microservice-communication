@@ -6,7 +6,11 @@ import org.springframework.stereotype.Component;
 
 import com.example.productapi.dto.ProductStockDTO;
 import com.example.productapi.service.ProductService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 public class ProductStockListener {
 
@@ -14,8 +18,15 @@ public class ProductStockListener {
 	private ProductService productService;
 
 	@RabbitListener(queues = "${app-config.rabbit.queue.product-stock}")
-	public void recieverProductStockMessage(ProductStockDTO product) {		
-		productService.updateProductStock(product);
+	public void recieverProductStockMessage(ProductStockDTO product) {
+		try {
+			log.info("Recieving message with data: {} and TransactionID: {}",
+					new ObjectMapper().writeValueAsString(product), product.getTransactionid());
+			productService.updateProductStock(product);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
 
 }

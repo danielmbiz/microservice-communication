@@ -1,5 +1,6 @@
 package com.example.productapi.service;
 
+import static com.example.productapi.config.RequestUtil.getCurrentRequest;
 import static org.springframework.util.ObjectUtils.isEmpty;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import com.example.productapi.repository.ProductRepository;
 import com.example.productapi.service.exceptions.DatabaseException;
 import com.example.productapi.service.exceptions.ResourceNotFoundException;
 import com.example.productapi.service.exceptions.ValidationException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +53,9 @@ public class ProductService {
 
 	@Autowired
 	private SalesClient salesClient;
+	
+    private static final String TRANSACTION_ID = "transactionid";
+    private static final String SERVICE_ID = "serviceid";
 
 	public ProductResponse findById(Integer id) {
 		if (isEmpty(id)) {
@@ -130,14 +135,14 @@ public class ProductService {
 			});
 			if (!productsForUpdate.isEmpty()) {
 				repository.saveAll(productsForUpdate);
-				var aprovedMessage = new SalesConfirmationDTO(product.getSalesId(), SalesStatus.APROVADO);
+				var aprovedMessage = new SalesConfirmationDTO(product.getSalesId(), SalesStatus.APROVADO, product.getTransactionid());
 				salesConfirmationSender.sendSalesConfirmationMessages(aprovedMessage);
 			}
 
 		} catch (Exception e) {
 			log.error("Erro no processamento da venda ", e.getMessage(), e);
 			salesConfirmationSender.sendSalesConfirmationMessages(
-					new SalesConfirmationDTO(product.getSalesId(), SalesStatus.REJEITADO));
+					new SalesConfirmationDTO(product.getSalesId(), SalesStatus.REJEITADO, product.getTransactionid()));
 		}
 	}
 
@@ -197,10 +202,19 @@ public class ProductService {
 	}
 
 	public ProductSalesResponse findProductSales(Integer id) {
-		var product = findById(id);
+		
 		try {
+			var currentRequest = getCurrentRequest();
+            var transactionid = currentRequest.getHeader(TRANSACTION_ID);
+            var serviceid = currentRequest.getAttribute(SERVICE_ID);
+            log.info("Sending GET request to orders by productId with data {} | [transactionID: {} | serviceID: {}]",
+                id, transactionid, serviceid);
+            var product = findById(id);
 			var sales = salesClient.findSalesByProduct(product.getId());
-			return new ProductSalesResponse(product, sales.getSalesId());
+			var response = new ProductSalesResponse(product, sales.getSalesId());
+			log.info("Recieving response from orders by productId with data {} | [transactionID: {} | serviceID: {}]",
+	                new ObjectMapper().writeValueAsString(response), transactionid, serviceid);
+			return response;
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new ValidationException("Erro ao recuperar as vendas do produto");
@@ -208,10 +222,20 @@ public class ProductService {
 	}
 
 	public void checkProductsStock(ProductCheckStockRequest request) {
-		if (isEmpty(request) || isEmpty(request.getProducts())) {
-			throw new ValidationException("Requisição e produtos devem ser informados");
+		try {
+			var currentRequest = getCurrentRequest();
+	        var transactionid = currentRequest.getHeader(TRANSACTION_ID);
+	        var serviceid = currentRequest.getAttribute(SERVICE_ID);
+	        log.info("Request to POST product stock with data {} | [transactionID: {} | serviceID: {}]",
+	            new ObjectMapper().writeValueAsString(request), transactionid, serviceid);
+			if (isEmpty(request) || isEmpty(request.getProducts())) {
+				throw new ValidationException("Requisição e produtos devem ser informados");
+			}
+			request.getProducts().forEach(this::validateStock);
+		} catch (Exception e) {
+			// TODO: handle exception
 		}
-		request.getProducts().forEach(this::validateStock);
+		
 	}
 
 	private void validateStock(ProductQuantityDTO productQuantityDTO) {
