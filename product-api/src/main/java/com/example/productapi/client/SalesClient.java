@@ -9,7 +9,7 @@ import com.example.productapi.dto.SalesProductResponse;
 @FeignClient(name = "salesClient", contextId = "salesClient", url = "${app-config.services.sales}")
 public interface SalesClient {
 	
-	@GetMapping("products/{productId}")
+	@GetMapping("/api/order/product/{productId}")
 	SalesProductResponse findSalesByProduct(@PathVariable Integer productId);
 	
 }

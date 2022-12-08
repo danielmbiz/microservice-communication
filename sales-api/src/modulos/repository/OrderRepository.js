@@ -21,6 +21,17 @@ class OrderRepository {
         }
     }
 
+    async findByProductId(productId) {
+        try {            
+            return await Order.find({ "products.productId" : Number(productId), status : "APROVADO"  });
+            //busca apenas 1 item
+            //return await Order.findOne({ where: { id } });
+        } catch (error) {
+            console.error(`Erro Order Repository 2: ${error.message}`);
+            return null;
+        }
+    }
+
     async findAll() {
         try {
             return await Order.find();

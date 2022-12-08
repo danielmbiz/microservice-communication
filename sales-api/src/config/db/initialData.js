@@ -3,7 +3,7 @@ import Order from "../../modulos/model/Order.js";
 export async function createInitialData() {
     await Order.collection.drop();
 
-    /*await Order.create({
+    await Order.create({
         products: [
           { productId: 1001, quantity: 2 },
           { productId: 1002, quantity: 1 }
@@ -58,5 +58,5 @@ export async function createInitialData() {
         status: "REJEITADO",
         createdAt: new Date(),
         updatedAt: new Date()
-    })*/
+    })
 }

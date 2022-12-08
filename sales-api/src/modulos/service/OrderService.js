@@ -10,11 +10,9 @@ class OrderService {
         try {
             const { id } = req.params;
             this.validateIdInformed(id);
-            const { authUser } = req;
-            const { authorization } = req.headers;
             let order = await OrderRepository.findById(id);
             if (!order) {
-                throw new Exception(BAD_REQUEST, "Ordem de compra não encontrada");
+                throw new Exception(BAD_REQUEST, "Pedido não encontrado");
             }
             return {
                 status: SUCCESS,
@@ -28,9 +26,49 @@ class OrderService {
         }
     }
 
+    async findByProductId(req) {
+        try {
+            const { productId } = req.params;
+            this.validateIdInformed(productId);
+            let orders = await OrderRepository.findByProductId(productId);
+            if (!orders) {
+                throw new Exception(BAD_REQUEST, "Pedidos não encontrados");
+            }
+            return {
+                status: SUCCESS,
+                salesId : orders.map((order) => {
+                    return order.id;
+                })
+            }
+        } catch (error) {
+            return {
+                status: error.status ? error.status : INTERNAL_SERVER_ERROR,
+                message: error.message
+            };
+        }
+    }
+
+    async findAll(req) {
+        try {
+            let orders = await OrderRepository.findAll();
+            if (!orders) {
+                throw new Exception(BAD_REQUEST, "Pedidos não encontrados");
+            }
+            return {
+                status: SUCCESS,
+                orders
+            }
+        } catch (error) {
+            return {
+                status: error.status ? error.status : INTERNAL_SERVER_ERROR,
+                message: error.message
+            };
+        }
+    }
+
     validateIdInformed(id) {
         if (!id) {
-            throw new Exception(BAD_REQUEST, "Id da ordem de compra não informada");
+            throw new Exception(BAD_REQUEST, "Id do pedido não informado");
         }
     }
 

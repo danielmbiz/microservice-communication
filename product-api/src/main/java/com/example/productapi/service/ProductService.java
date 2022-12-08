@@ -202,6 +202,7 @@ public class ProductService {
 			var sales = salesClient.findSalesByProduct(product.getId());
 			return new ProductSalesResponse(product, sales.getSalesId());
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new ValidationException("Erro ao recuperar as vendas do produto");
 		}
 	}
